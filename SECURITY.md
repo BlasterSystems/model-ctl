@@ -21,7 +21,7 @@ Please include as much of the following as you can:
 
 ## Supported versions
 
-Only the latest tagged release (`BlasterSystems/model-ctl@vX.Y.Z`) receives
+Only the latest tagged release (`BlasterSystems/modelctl@vX.Y.Z`) receives
 security fixes. The `0.x` series ships new functionality in minor releases;
 security fixes may land as patch releases.
 

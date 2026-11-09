@@ -8,8 +8,8 @@ strong atomicity guarantees — read the short rules below before opening a PR.
 Python 3.11+ and [`uv`](https://docs.astral.sh/uv/) are required.
 
 ```bash
-git clone https://github.com/BlasterSystems/model-ctl
-cd model-ctl
+git clone https://github.com/BlasterSystems/modelctl
+cd modelctl
 uv sync --all-extras
 uv run --extra test pytest   # full suite; the repo has no CI, this is the gate
 ```
