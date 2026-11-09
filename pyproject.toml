@@ -7,6 +7,7 @@ name = "modelctl"
 dynamic = ["version"]
 description = "Atomic Hugging Face model deployment for NAS and local inference hosts"
 readme = "README.md"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
 dependencies = [
   "huggingface-hub>=0.34.0",

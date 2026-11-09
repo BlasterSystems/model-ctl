@@ -4,6 +4,11 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- modelctl is now licensed under the Apache License, Version 2.0
+  (previously MIT).
+
 ## 0.23.0
 
 ### Added
