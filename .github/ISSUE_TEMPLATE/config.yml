@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea discussion
+    url: https://github.com/BlasterSystems/model-ctl/discussions
+    about: Ask questions and propose ideas in GitHub Discussions

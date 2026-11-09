@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in modelctl is broken or behaves against its documented guarantees
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: modelctl version
+      description: Output of `modelctl --version` and the install source (release tag or git revision).
+      placeholder: "0.23.0 (installed from v0.23.0)"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: command
+    attributes:
+      label: Which command area?
+      options:
+        - download / queue
+        - update / activate
+        - sync-local
+        - register-local
+        - push / receive-cache
+        - delete / delete-local
+        - serve-command / path
+        - manifest / catalog / cards
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the exact command line and output. Redact tokens and hostnames. `--json` output is especially helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: If this violates an atomicity guarantee (staging never becoming active, deletion preserving shared objects, etc.), say which one.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Steps or a script that reproduces it on a fresh store/cache.
+    validations:
+      required: false

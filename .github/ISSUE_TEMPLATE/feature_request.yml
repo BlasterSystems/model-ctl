@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a new capability for modelctl
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do, and what stands in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The command shape or behavior you would expect (CLI surface matters — modelctl aims for a small, consistent one).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches, or why existing commands do not cover it.
+    validations:
+      required: false

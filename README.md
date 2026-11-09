@@ -1075,3 +1075,8 @@ metadata and CLI output remain synchronized.
 ```bash
 uv run --extra test pytest
 ```
+
+## License
+
+[MIT](LICENSE) © BlasterSystems. See [CONTRIBUTING.md](CONTRIBUTING.md) to get
+started, and [SECURITY.md](SECURITY.md) to report vulnerabilities privately.
