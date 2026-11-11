@@ -386,6 +386,7 @@ def download_generated_manifest(
     api: Any | None = None,
     snapshot: Any | None = None,
     progress: DownloadProgressEmitter | None = None,
+    min_free_bytes: int = 0,
 ) -> tuple[Path, Path]:
     """Download from a manifest document already validated during preflight."""
     import yaml
@@ -410,7 +411,14 @@ def download_generated_manifest(
             root, document, force=force_manifest
         )
     manifest = parse_manifest(document, manifest_name)
-    active = update_model(root, manifest, api=api, snapshot=snapshot, progress=progress)
+    active = update_model(
+        root,
+        manifest,
+        api=api,
+        snapshot=snapshot,
+        progress=progress,
+        min_free_bytes=min_free_bytes,
+    )
     return manifest_path, active
 
 
@@ -428,6 +436,7 @@ def download_from_hf(
     api: Any | None = None,
     snapshot: Any | None = None,
     progress: DownloadProgressEmitter | None = None,
+    min_free_bytes: int = 0,
 ) -> tuple[Path, Path]:
     """Generate a manifest, then download, validate, publish, and activate it."""
     document = generate_manifest_document(
@@ -447,4 +456,5 @@ def download_from_hf(
         api=api,
         snapshot=snapshot,
         progress=progress,
+        min_free_bytes=min_free_bytes,
     )

@@ -10,6 +10,7 @@ from modelctl.maintenance import (
     audit_staging,
     cleanup_objects,
     cleanup_staging,
+    prune_cleanup_quarantine,
 )
 from modelctl.manifest import parse_manifest
 from modelctl.validation import ExpectedFile, write_metadata
@@ -63,6 +64,38 @@ def test_staging_audit_and_explicit_cleanup(tmp_path):
 
     with pytest.raises(ModelctlError, match="resumable"):
         cleanup_staging(tmp_path, [str(resumable.relative_to(layout.staging))])
+
+
+def test_prune_cleanup_quarantine_lists_then_removes_debris_only(tmp_path):
+    layout = Layout(tmp_path)
+    layout.prepare()
+    debris = layout.staging / ".cleanup-quarantine" / "deadbeef"
+    (debris / "objects").mkdir(parents=True)
+    (debris / "objects" / "w.bin").write_bytes(b"x" * 2048)
+    # Everything the prune must never touch:
+    regular = layout.staging / "org" / "demo" / "commit--x"
+    regular.mkdir(parents=True)
+    (regular / "data").write_bytes(b"data")
+    active_quarantine = layout.staging / ".active-quarantine" / "glm" / "stamp"
+    active_quarantine.mkdir(parents=True)
+    (active_quarantine / "w.bin").write_bytes(b"keep")
+    catalog = tmp_path / "catalog.json"
+    catalog.write_text("{}")
+
+    dry = prune_cleanup_quarantine(tmp_path)
+    assert [item.status for item in dry] == ["would_remove"]
+    assert dry[0].bytes >= 2048  # _tree_bytes reports disk usage, not logical size
+    assert debris.exists()  # dry run removes nothing
+
+    removed = prune_cleanup_quarantine(tmp_path, apply=True)
+    assert [item.status for item in removed] == ["removed"]
+    assert not debris.exists()
+    assert not (layout.staging / ".cleanup-quarantine").exists()
+    assert regular.exists()
+    assert active_quarantine.exists()  # per-model cleanup-quarantine territory
+    assert catalog.read_text() == "{}"
+
+    assert prune_cleanup_quarantine(tmp_path) == []
 
 
 def test_object_audit_and_gc_refuse_active_object(tmp_path):
