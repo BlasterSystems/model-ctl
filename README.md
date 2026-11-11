@@ -1064,7 +1064,9 @@ document in `0.21.0`. Throttled `progress:` JSONL emission on stderr (bytes
 done/total, speed, queue entry) for hub-side download tracking was added in
 `0.22.0`. The `register-local` verb, which adopts an existing local Hugging
 Face cache entry as a modelctl registration without transferring it, was
-added in `0.23.0`.
+added in `0.23.0`. A store free-space floor for `download` and `queue`
+(`--min-free-bytes`) and the `prune-cleanup-quarantine` verb for interrupted
+cleanup debris were added in `0.24.0`.
 
 `src/modelctl/__init__.py` is the single version source. Hatch reads it when
 building the package, and `modelctl --version` imports the same value so package
