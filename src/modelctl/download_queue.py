@@ -326,6 +326,7 @@ def execute_download_queue(
     *,
     jobs: int = 1,
     downloader: Callable[..., tuple[Path, Path]] | None = None,
+    min_free_bytes: int = 0,
 ) -> list[DownloadResult]:
     """Execute a queue only after prepare_download_queue has succeeded."""
     if jobs < 1:
@@ -348,6 +349,7 @@ def execute_download_queue(
                     item.document,
                     force_manifest=request.force,
                     progress=emitter,
+                    min_free_bytes=min_free_bytes,
                 )
             else:
                 manifest_path, active_path = downloader(

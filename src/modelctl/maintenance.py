@@ -148,6 +148,45 @@ def _safe_selected_path(base: Path, value: str) -> Path:
     return candidate
 
 
+def prune_cleanup_quarantine(root: Path, *, apply: bool = False) -> list[StoreEntryAudit]:
+    """List (and with ``apply`` remove) interrupted cleanup-staging debris.
+
+    ``cleanup-staging --apply`` renames each selected tree into
+    ``.staging/.cleanup-quarantine/<uuid>`` and removes it in the same call;
+    an interrupted removal leaves debris that nothing ever revisits. Only
+    direct children of ``.staging/.cleanup-quarantine`` are ever touched.
+    Dry-run is the default.
+    """
+    layout = Layout(root)
+    parent = layout.staging / ".cleanup-quarantine"
+    results: list[StoreEntryAudit] = []
+    if not parent.is_dir():
+        return results
+    for path in sorted(parent.iterdir(), key=lambda item: item.name):
+        if not path.is_dir() or path.is_symlink():
+            continue
+        total = _tree_bytes(path)
+        if apply:
+            shutil.rmtree(path)
+        results.append(
+            StoreEntryAudit(
+                path,
+                "removed" if apply else "would_remove",
+                total,
+                None,
+                "interrupted cleanup-staging delete; verify contents then re-run with --apply"
+                if not apply
+                else "removed",
+            )
+        )
+    if apply:
+        try:
+            parent.rmdir()
+        except OSError:
+            pass  # other entries remain or the dir is owned elsewhere
+    return results
+
+
 def cleanup_staging(
     root: Path, selections: list[str], *, apply: bool = False
 ) -> list[StoreEntryAudit]:

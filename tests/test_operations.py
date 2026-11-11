@@ -160,6 +160,45 @@ def test_update_publishes_before_switching_reference_and_reuses_valid_object(tmp
     assert reused == result
 
 
+def test_update_model_refuses_below_free_space_floor(tmp_path):
+    from modelctl.disk import DiskSpaceError
+    from modelctl.layout import Layout
+
+    snapshot = FakeSnapshot({"config.json": b"{}", "model.safetensors": b"weights"})
+    manifest = _manifest()
+    with pytest.raises(DiskSpaceError, match="free at"):
+        update_model(
+            tmp_path,
+            manifest,
+            api=FakeApi("a" * 40),
+            snapshot=snapshot,
+            min_free_bytes=2**60,
+        )
+
+    # Nothing was downloaded, and the journal never marked the staging tree
+    # resumable — a floor abort happens before any write.
+    staging = Layout(tmp_path).staging_path(manifest, "a" * 40)
+    assert not any(staging.rglob("*"))
+    states = [
+        item["state"]
+        for item in json.loads((tmp_path / "state" / "demo.json").read_text())["history"]
+    ]
+    assert UpdateState.PARTIAL_RESUMABLE not in states
+
+
+def test_update_model_proceeds_above_free_space_floor(tmp_path):
+    active = tmp_path / "active" / "demo"
+    snapshot = FakeSnapshot({"config.json": b"{}"}, active)
+    update_model(
+        tmp_path,
+        _manifest(),
+        api=FakeApi("a" * 40),
+        snapshot=snapshot,
+        min_free_bytes=1,  # 1 byte floor: every real volume passes
+    )
+    assert active.is_symlink()
+
+
 def test_update_auto_repairs_dereferenced_active_copy(tmp_path):
     """A process that replaces the active symlink with a validated copy must
     not block the next activation of the same model."""

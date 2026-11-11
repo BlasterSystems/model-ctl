@@ -15,6 +15,7 @@ from .catalog import (
     mark_catalog_dirty_locked,
     project_models,
 )
+from .disk import DiskSpaceError, ensure_free_space
 from .errors import ModelctlError, ValidationError
 from .generation import parse_hf_source
 from .hf_cache import (
@@ -255,6 +256,7 @@ def update_model(
     api: Any | None = None,
     snapshot: Callable[..., Any] | None = None,
     progress: DownloadProgressEmitter | None = None,
+    min_free_bytes: int = 0,
 ) -> Path:
     layout = Layout(root)
     layout.prepare()
@@ -287,6 +289,12 @@ def update_model(
                 expected = estimate_snapshot(
                     manifest, commit, staging, snapshot=snapshot
                 )
+                if min_free_bytes > 0:
+                    # The dry-run sizes are known before anything is written:
+                    # abort here (not as PARTIAL_RESUMABLE) when the volume
+                    # could not hold the floor plus the whole download.
+                    required = sum(item.size or 0 for item in expected)
+                    ensure_free_space(root, min_free_bytes, required)
                 if progress is not None:
                     # The dry-run sizes are the byte denominator; the poller
                     # only counts what the staging dir actually holds.
@@ -302,6 +310,10 @@ def update_model(
                 finally:
                     if progress is not None:
                         progress.stop()
+            except DiskSpaceError:
+                # Nothing was written; do not mark the (empty) staging tree
+                # resumable — that would hide it from cleanup-staging.
+                raise
             except BaseException as exc:
                 journal.transition(
                     UpdateState.PARTIAL_RESUMABLE,

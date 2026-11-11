@@ -216,7 +216,7 @@ def test_queue_rejects_nonpositive_jobs(tmp_path):
 def test_queue_workers_thread_entry_index_and_emitter(tmp_path, monkeypatch):
     recorded: list[tuple[str, object]] = []
 
-    def fake_download(root, document, *, force_manifest=False, progress=None):
+    def fake_download(root, document, *, force_manifest=False, progress=None, min_free_bytes=0):
         recorded.append((document["name"], progress))
         return (tmp_path / "manifest.yaml", tmp_path / "active")
 

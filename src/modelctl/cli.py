@@ -45,6 +45,7 @@ from .maintenance import (
     audit_staging,
     cleanup_objects,
     cleanup_staging,
+    prune_cleanup_quarantine,
 )
 from .manifest import load_manifest, validate_name
 from .progress import DownloadProgressEmitter
@@ -578,6 +579,24 @@ Quarantined directories are retained until cleanup-quarantine is explicitly run.
     staging_cleanup.add_argument("--json", action="store_true", help="emit JSON")
     _add_root(staging_cleanup)
 
+    prune_cq = commands.add_parser(
+        "prune-cleanup-quarantine",
+        help="remove interrupted cleanup-staging quarantine debris",
+        description=(
+            "List and optionally remove the .staging/.cleanup-quarantine trees "
+            "that an interrupted cleanup-staging delete left behind. Those "
+            "trees were already validated when cleanup-staging armed them; "
+            "this command only revisits that debris. Dry-run is the default."
+        ),
+        formatter_class=HELP_FORMATTER,
+        epilog="""examples:
+  modelctl prune-cleanup-quarantine --root /mnt/nas/llm-models
+  modelctl prune-cleanup-quarantine --root /mnt/nas/llm-models --apply""",
+    )
+    prune_cq.add_argument("--apply", action="store_true", help="remove the debris trees")
+    prune_cq.add_argument("--json", action="store_true", help="emit JSON")
+    _add_root(prune_cq)
+
     objects_audit = commands.add_parser(
         "objects-audit",
         help="classify active and unreferenced immutable objects",
@@ -752,6 +771,13 @@ llama.cpp. If multiple GGUF quantizations exist, --quantization is required.""",
         action="store_true",
         help="replace a generated manifest with different settings",
     )
+    download.add_argument(
+        "--min-free-bytes",
+        type=int,
+        default=0,
+        help="refuse to start when the store volume's free space is below this "
+        "many bytes (plus the download's expected size); 0 disables (default)",
+    )
     _add_root(download)
 
     queue = commands.add_parser(
@@ -809,6 +835,13 @@ There is no fixed jobs limit; start with 2 or 3 to avoid contention.""",
             "emit a machine-readable per-entry results document as the final "
             "stdout line (human progress moves to stderr)"
         ),
+    )
+    queue.add_argument(
+        "--min-free-bytes",
+        type=int,
+        default=0,
+        help="per-entry: refuse to start when the store volume's free space is "
+        "below this many bytes (plus the entry's expected size); 0 disables",
     )
     _add_root(queue)
 
@@ -1477,6 +1510,17 @@ def run(argv: list[str] | None = None) -> int:
             _print_delete_result(root, result, apply=args.apply)
         return 0
 
+    if args.command == "prune-cleanup-quarantine":
+        results = prune_cleanup_quarantine(root, apply=args.apply)
+        action = "removed" if args.apply else "would remove"
+        if args.json:
+            print(json.dumps([result.to_dict() for result in results], indent=2))
+        else:
+            for result in results:
+                print(f"[{action}] {result.path} — {result.bytes / 2**40:.2f} TiB")
+            print(f"cleanup: {len(results)} debris tree(s) {action}")
+        return 0
+
     if args.command == "download":
         validate_queue_root(root)
         manifest_path, active = download_from_hf(
@@ -1490,6 +1534,7 @@ def run(argv: list[str] | None = None) -> int:
             mtp=args.mtp,
             force_manifest=args.force,
             progress=DownloadProgressEmitter(),
+            min_free_bytes=args.min_free_bytes,
         )
         print(f"manifest: {manifest_path}")
         print(f"active: {active}")
@@ -1537,7 +1582,7 @@ def run(argv: list[str] | None = None) -> int:
             f"preflight complete: starting {len(prepared)} download(s), "
             f"up to {concurrency} concurrent"
         )
-        results = execute_download_queue(root, prepared, jobs=args.jobs)
+        results = execute_download_queue(root, prepared, jobs=args.jobs, min_free_bytes=args.min_free_bytes)
         failures = 0
         for index, result in enumerate(results, start=1):
             label = prepared[index - 1].name
