@@ -4,6 +4,17 @@ This project follows semantic versioning.
 
 ## Unreleased
 
+### Added
+
+- `download` and `queue` accept `--min-free-bytes`: the store volume's free
+  space (plus the download's expected size, from the dry-run estimate) is
+  checked before anything is written, and a below-floor download fails
+  cleanly without marking the staging tree resumable. `0` (the default)
+  disables the floor.
+- `prune-cleanup-quarantine`: lists and optionally removes the
+  `.staging/.cleanup-quarantine` debris an interrupted `cleanup-staging
+  --apply` leaves behind. Dry-run is the default.
+
 ### Changed
 
 - modelctl is now licensed under the Apache License, Version 2.0
